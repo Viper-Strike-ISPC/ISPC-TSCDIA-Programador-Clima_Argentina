@@ -5,6 +5,8 @@ import time
 import schedule
 from datetime import datetime
 from tabulate import tabulate
+import mysql.connector
+from mysql.connector import errorcode
 
 # Define la hora en la que se desea detener la ejecución 
 hora_detener = "22:00"
@@ -48,7 +50,47 @@ def mostrar_datos_simple():
             # Escribe los datos en el archivo CSV
             escritor_csv.writerow([provincia, dia, hora, fecha, temMax, temMin])
 
-    
+
+#------------Código para convertir CSV a BDD--------------------
+# Configura la conexión a la base de datos
+config = {
+    'user': 'admin',
+    'password': 'admin',
+    'host': 'loca_host',
+    'database': 'datos_temperaturas',
+    'raise_on_warnings': True,
+}
+
+# Intenta conectarte a la base de datos
+try:
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+
+    # Leer el archivo CSV e insertar los datos en la base de datos
+    with open('datos8.csv', 'r', encoding='utf-8') as archivo_csv:
+        lector_csv = csv.reader(archivo_csv)
+        next(lector_csv)  # Saltar la primera fila si contiene encabezados
+
+        for fila in lector_csv:
+            # Suponiendo que tu tabla en MySQL tiene las mismas columnas en el mismo orden
+            cursor.execute("INSERT INTO tu_tabla (provincia, dia, hora, fecha, temp_max, temp_min) VALUES (%s, %s, %s, %s, %s, %s)", (fila[0], fila[1], fila[2], fila[3], fila[4], fila[5]))
+
+    # Confirmar cambios y cerrar la conexión
+    cnx.commit()
+    cursor.close()
+    cnx.close()
+
+except mysql.connector.Error as err:
+    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+        print("Error: Acceso denegado, verifica tus credenciales.")
+    elif err.errno == errorcode.ER_BAD_DB_ERROR:
+        print("Error: La base de datos no existe.")
+    else:
+        print(err)
+#------------Código para convertir CSV a BDD--------------------
+
+
+
 def mostrar_datos_plano():
     with open('datos8.csv', 'r', encoding='utf-8') as archivo_csv:
         lector_csv = csv.reader(archivo_csv)
